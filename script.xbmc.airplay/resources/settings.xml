@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<settings>
+  <category label="100">
+    <setting id="airplayport" type="number" label="101" default="36667"/>
+    <setting id="airplaylock" type="bool" label="102" default="false"/>
+    <setting id="airplaypassword" type="text" option="hidden" subsetting="true" enable="eq(-1,true)" label="103"/>
+    <setting id="airtunesdebug" type="bool" label="104" default="false"/>
+  </category>
+</settings>

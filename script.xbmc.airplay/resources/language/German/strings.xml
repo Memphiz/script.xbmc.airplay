@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+<!--Common-->
+ 
+  
+<!--Settings-->  
+  <!--General-->
+  <string id="100">Allgemein</string>
+  <string id="101">AirPlay Server Port</string>
+  <string id="102">Passwortschutz aktivieren</string>
+  <string id="103">Passwort</string>
+  <string id="104">AirTunes Debug logging einschalten</string>
+
+  <!--Notifications-->                                                                                                                                                                                           
+  <string id="504">Dieses Addon benoetigt eine binaere Bibliothek.</string>  
+  <string id="505">Bitte lesen Sie die README Datei.</string>  
+  <string id="506">fuer weitere Hilfe.</string>  
+  <string id="507">Dieses Addon kann auf Ihrem Betriebssystem nicht</string>  
+  <string id="508">ausgefuehrt werden! (Das ctypes Modul fehlt)</string>  
+  <string id="509">Soll versucht werden diese automatisch herunterzuladen?</string>
+</strings>

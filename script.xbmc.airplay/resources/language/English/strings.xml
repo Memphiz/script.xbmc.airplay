@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes"?>
+<strings>
+<!--Common-->
+ 
+  
+<!--Settings-->  
+  <!--General-->
+  <string id="100">General</string>
+  <string id="101">AirPlay server port</string>
+  <string id="102">Activate password protection</string>
+  <string id="103">Password</string>
+  <string id="104">Enable AirTunes DebugLog</string>  
+
+  <!--Notifications-->
+  <string id="504">This addon needs a binary library.</string>  
+  <string id="505">Please read the README file.</string>  
+  <string id="506">for getting some more instructions.</string>  
+  <string id="507">This addon can't be run on that</string>  
+  <string id="508">operating system! (missing ctypes module)</string>  
+  <string id="509">Should the addon try to download it for you?</string>
+</strings>
+
+
