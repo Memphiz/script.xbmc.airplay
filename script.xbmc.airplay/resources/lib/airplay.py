@@ -178,6 +178,8 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
       self.handleSetProperty()
     elif self.uri == "/getProperty":
       self.handleGetProperty()
+    elif self.uri == "/volume":
+      self.handleVolume()
     else:
       handled = False
       self.send_response(AIRPLAY_STATUS_NOT_IMPLEMENTED)
@@ -390,6 +392,18 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
 
   def handleGetProperty(self):
     self.sendGeneralResponse(AIRPLAY_STATUS_NOT_FOUND)
+  def handleVolume(self):
+    foundIdx = self.uriParams.find('volume=')
+      
+    if foundIdx != -1:
+      try:
+        volume = float(self.uriParams[foundIdx + len("volume=") : len(self.uriParams)])
+        volume = volume * 100
+        xbmc.executebuiltin("SetVolume(%d)" % volume)
+      except:
+        log(xbmc.LOGERROR,"Error parsing volume")
+      finally:
+        self.sendGeneralResponse(AIRPLAY_STATUS_OK)
   
   def sendResponseWithBody(self, status, contentType, body):
     self.send_response(status)
@@ -435,7 +449,6 @@ class AirPlayServer (threading.Thread):
   def __init__(self, name):
       threading.Thread.__init__(self)
       self.name = name
-      self.abort = False
       self.port = 36667
       self.abort = False
 
@@ -443,6 +456,7 @@ class AirPlayServer (threading.Thread):
     self.port = port
     
   def shutdown(self):
+    global g_airplayThread
     self.abort = True
     self.httpd.shutdown()    
     log(xbmc.LOGDEBUG, "Waiting for server shutdown.")
@@ -496,6 +510,7 @@ def airplay_startServer(port):
 
   log(xbmc.LOGDEBUG,"Starting server")
   g_airplayThread.setPort(port)
+  g_airplayThread.daemon=True
   try:
     g_airplayThread.start()
   except:

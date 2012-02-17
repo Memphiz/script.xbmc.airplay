@@ -18,4 +18,6 @@
   <string id="507">Dieses Addon kann auf Ihrem Betriebssystem nicht</string>  
   <string id="508">ausgefuehrt werden! (Das ctypes Modul fehlt)</string>  
   <string id="509">Soll versucht werden diese automatisch herunterzuladen?</string>
+  <string id="510">ZeroConf ist in den Netzwerkeinstellungen deaktiviert!</string>  
+  <string id="511">Für dieses Addon muß ZeroConf aktiviert sein.</string>    
 </strings>

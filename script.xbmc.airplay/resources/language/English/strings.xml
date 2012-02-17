@@ -18,6 +18,8 @@
   <string id="507">This addon can't be run on that</string>  
   <string id="508">operating system! (missing ctypes module)</string>  
   <string id="509">Should the addon try to download it for you?</string>
+  <string id="510">ZeroConf is disabled in network settings!</string>  
+  <string id="511">Please enable it for using this addon.</string>    
 </strings>
 
 

@@ -188,7 +188,7 @@ def audiooutput_open_live(driver_id, format, option):
 
 #  if audiooutput_get_option(option, "name"):
 #    item.GetMusicInfoTag()->SetTitle(ao_get_option(option, "name"));
-  xbmc.executebuiltin("PlayMedia(%s,airtunes)" % AO_PIPE_NAME)
+  xbmc.executebuiltin("PlayMedia(%s,mimetype=audio/x-xbmc-pcm,isradio,no-skip,no-pause,isfile)" % AO_PIPE_NAME)
   xbmc.executebuiltin("ActivateWindow(WINDOWVISUALISATION)")
   # return 1 here null pointer would lead to abort in libshairport (this is a pointe with adr 0x1 - it wont
   # be accessed inlibshairport but only passed around without a sense (refactor of libshairport will get rid)

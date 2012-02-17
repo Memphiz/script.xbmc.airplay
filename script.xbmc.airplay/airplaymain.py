@@ -22,11 +22,12 @@ import xbmcaddon
 import xbmcgui
 import time
 import os
+import threading
 
 __settings__   = xbmcaddon.Addon(id='script.xbmc.airplay')
 __cwd__        = __settings__.getAddonInfo('path')
 __icon__       = os.path.join(__cwd__,"icon.png")
-__scriptname__ = "XBMC AirPlayServer"
+__scriptname__ = "AirPlay"
 
 __libbaseurl__ = "http://mirrors.xbmc.org/build-deps/addon-deps/binaries/libshairport"
 __libnameosx__ = "libshairport-osx.0.dylib"
@@ -37,18 +38,6 @@ BASE_RESOURCE_PATH = xbmc.translatePath( os.path.join( __cwd__, 'resources', 'li
 AIRPLAY_TEMP_IMAGE_PATH = xbmc.translatePath(os.path.join('special://temp','airplay_photo.jpg'))
 sys.path.append (BASE_RESOURCE_PATH)
 
-'''
-xbmc.log("Started")
-
-while 1:
-    print "Abort Requested: "+str(xbmc.abortRequested)
-    if (xbmc.abortRequested):
-        xbmc.log("Aborting...")
-        break
-    time.sleep(1)
-
-xbmc.log("Exiting")
-'''
 from settings import *
 from airplay import *
 from airtunes import *
@@ -96,7 +85,6 @@ def process_airplay():
   while not xbmc.abortRequested:
 
     initServers()
-    
     while not xbmc.abortRequested:
       time.sleep(1)
       
@@ -107,7 +95,6 @@ def process_airplay():
       if not airplay_serverRunning() or ( g_airtunesAvailable and not airtunes_serverRunning() ):
         log(xbmc.LOGERROR, "Unexpected server shutdown")
         break
-  
     deinitServers()
     
 def announceZeroconfService():
@@ -134,9 +121,17 @@ def deAnnounceZeroconfService():
   airplay_revokeZeroconf(g_zeroconf)
   if g_airtunesAvailable:
     airtunes_revokeZeroconf(g_zeroconf)
+    
+def checkZeroconfAvailable():
+  return g_zeroconf.isEnabled()
 
 #MAIN - entry point
 initGlobals()
+if not checkZeroconfAvailable():
+  t1 = __settings__.getLocalizedString(510)
+  t2 = __settings__.getLocalizedString(511)
+  xbmcgui.Dialog().ok(__scriptname__,t1,t2)
+  sys.exit(1)
 g_airtunesAvailable = False
 loaded = -1
 

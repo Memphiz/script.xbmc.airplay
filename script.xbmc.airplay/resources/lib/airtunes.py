@@ -44,7 +44,6 @@ class AirTunesServer (threading.Thread):
   def __init__(self, name):
       threading.Thread.__init__(self)
       self.name = name
-      self.abort = False
       self.port = 36668
       self.abort = False
 
@@ -52,12 +51,14 @@ class AirTunesServer (threading.Thread):
     self.port = port
     
   def shutdown(self):
+    global g_airtunesThread
     self.abort = True
 
-    shairport_exit()    
-    while airtunes_serverRunning():
-      time.sleep(1)  
-      log(xbmc.LOGDEBUG, "Waiting for server shutdown.")
+    shairport_exit()
+    log(xbmc.LOGDEBUG, "Waiting for server shutdown.")
+    g_airtunesThread.join()
+    log(xbmc.LOGDEBUG, "Done waiting for server shutdown.")
+
 
   def initShairport(self):
     global g_macAdr
