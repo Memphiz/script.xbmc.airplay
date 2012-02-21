@@ -257,12 +257,16 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
     if len(location):
       location = location + "|User-Agent=AppleCoreMedia/1.0.0.8F455 (AppleTV; U; CPU OS 4_3 like Mac OS X; de_de)"
       log(xbmc.LOGDEBUG, "position: " + str(position))
+      listitem = xbmcgui.ListItem()
       if position > 0.0:
         posPercent = position * 100
         startPercentStr = 'startpercentage=%d' % int(posPercent)
-        xbmc.executebuiltin("PlayMedia(%s,%s,noresume)" % (location, startPercentStr))
+        listitem.setProperty('StartPercent', startPercentStr)
+        xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location, listitem)
+        #xbmc.executebuiltin("PlayMedia(%s,%s,noresume)" % (location, startPercentStr))
       else:
-        xbmc.executebuiltin("PlayMedia(%s)" % location)
+        xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location)
+        #xbmc.executebuiltin("PlayMedia(%s)" % location)
       g_isPlaying  = True         
       self.sendReverseEvent(EVENT_PLAYING)
     else:
@@ -545,5 +549,6 @@ def airplay_announceZeroconf(zeroconf, mac, friendlyName):
 
 def airplay_revokeZeroconf(zeroconf):
   zeroconf.removeService(airplaystr.AIRPLAY_ZEROCONF_HANDLE)
+
 
 
