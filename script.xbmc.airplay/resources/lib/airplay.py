@@ -22,6 +22,7 @@ import threading
 import BaseHTTPServerMod
 import shutil
 import xbmc
+import xbmcgui
 from SocketServer import ThreadingMixIn
 
 __scriptname__ = sys.modules[ "__main__" ].__scriptname__
@@ -257,16 +258,13 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
     if len(location):
       location = location + "|User-Agent=AppleCoreMedia/1.0.0.8F455 (AppleTV; U; CPU OS 4_3 like Mac OS X; de_de)"
       log(xbmc.LOGDEBUG, "position: " + str(position))
-      listitem = xbmcgui.ListItem()
       if position > 0.0:
         posPercent = position * 100
-        startPercentStr = 'startpercentage=%d' % int(posPercent)
-        listitem.setProperty('StartPercent', startPercentStr)
+        listitem = xbmcgui.ListItem()      
+        listitem.setProperty('StartPercent', str(posPercent))
         xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location, listitem)
-        #xbmc.executebuiltin("PlayMedia(%s,%s,noresume)" % (location, startPercentStr))
       else:
         xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location)
-        #xbmc.executebuiltin("PlayMedia(%s)" % location)
       g_isPlaying  = True         
       self.sendReverseEvent(EVENT_PLAYING)
     else:

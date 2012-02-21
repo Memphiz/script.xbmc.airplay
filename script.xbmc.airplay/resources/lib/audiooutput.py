@@ -19,6 +19,7 @@
 import sys
 import time
 import xbmc
+import xbmcgui
 import struct
 
 __scriptname__ = sys.modules[ "__main__" ].__scriptname__
@@ -29,7 +30,7 @@ sys.path.append (__cwd__)
 
 from ctypes import *
 from airplay import *
-AO_PIPE_NAME = 'pipe://airtunes_ao/'
+AO_PIPE_NAME = 'pipe://airtunes_ao/stream'
 BXA_PACKET_TYPE_FMT  = 1
 
 global g_pipesManager
@@ -176,7 +177,7 @@ def audiooutput_open_live(driver_id, format, option):
     log(xbmc.LOGERROR, "error wryting BXA header to pipe")
     return None
 
-  xbmc.executebuiltin('PlayerControl(Stop)')
+  xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).stop()
 #todo fixme
 #  CFileItem item;
 
@@ -188,7 +189,10 @@ def audiooutput_open_live(driver_id, format, option):
 
 #  if audiooutput_get_option(option, "name"):
 #    item.GetMusicInfoTag()->SetTitle(ao_get_option(option, "name"));
-  xbmc.executebuiltin("PlayMedia(%s,mimetype=audio/x-xbmc-pcm,isradio,no-skip,no-pause,isfile)" % AO_PIPE_NAME)
+  listitem = xbmcgui.ListItem()
+  listitem.setInfo('music', {'title' : 'Streaming'})
+  listitem.setProperty('mimetype', 'audio/x-xbmc-pcm')
+  xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).play(AO_PIPE_NAME, listitem)
   xbmc.executebuiltin("ActivateWindow(WINDOWVISUALISATION)")
   # return 1 here null pointer would lead to abort in libshairport (this is a pointe with adr 0x1 - it wont
   # be accessed inlibshairport but only passed around without a sense (refactor of libshairport will get rid)
@@ -202,7 +206,7 @@ def audiooutput_close(device):
   #while the movie is loading
   #in that case we don't want to stop the player here
   #because this would stop the airplaying video
-  if not airplay_isPlaying():
+  if xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).isPlaying():
     xbmc.executebuiltin('PlayerControl(Stop)')
     log(xbmc.LOGDEBUG, "AirPlay not running - stopping player");
   else:
@@ -225,4 +229,4 @@ def audiooutput_get_option(options, key):
   if key in g_options:
     return g_options[key]
   return None
- 
+
