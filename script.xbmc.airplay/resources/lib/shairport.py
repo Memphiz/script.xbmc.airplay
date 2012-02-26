@@ -43,6 +43,8 @@ __libnameosx__ = sys.modules[ "__main__" ].__libnameosx__
 __libnameios__ = sys.modules[ "__main__" ].__libnameios__
 #__libnamewin__ = sys.modules[ "__main__" ].__libnamewin__
 
+from settings import *
+
 global g_shairportLoaded
 global g_libshairport
 global g_printfCallback

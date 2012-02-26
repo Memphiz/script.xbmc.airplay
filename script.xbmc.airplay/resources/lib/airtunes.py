@@ -30,6 +30,7 @@ sys.path.append (__cwd__)
 import digestauth
 from settings import *
 from shairport import *
+from airplay import *
 
 global g_usePassword
 global g_password

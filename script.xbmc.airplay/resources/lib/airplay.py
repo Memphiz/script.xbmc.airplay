@@ -36,6 +36,7 @@ import airplaystr
 import digestauth
 import biplist
 from settings import *
+from audiooutput import audiooutput_playback_running
 
 AIRPLAY_STATUS_OK                  = 200
 AIRPLAY_STATUS_SWITCHING_PROTOCOLS = 101
@@ -44,6 +45,15 @@ AIRPLAY_STATUS_NOT_FOUND           = 404
 AIRPLAY_STATUS_METHOD_NOT_ALLOWED  = 405
 AIRPLAY_STATUS_NOT_IMPLEMENTED     = 501
 AIRPLAY_STATUS_NO_RESPONSE_NEEDED  = 1000   #custom!
+
+#the delay after stopping which will
+#lead to airplay_isPlaying return False
+#this is needed for deal with some wonky
+#airplay apps on ios5 (apple trailers app)
+#which starts and stops a bunch off times
+#before it settles
+AIRPLAY_AIRTUNES_BLOCK_DELAY       = 3
+
 
 
 EVENT_NONE    = -1
@@ -62,6 +72,7 @@ global g_isPlaybackReallyStarted
 global g_reverseFiles
 global g_lastEvent
 global g_macAdr
+global g_lastComTime
 
 # global functions
 def log(loglevel, msg):  
@@ -110,6 +121,8 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
   
   def handleAirplayProtocol(self, method):
     global g_usePassword
+    global g_lastComTime
+    
     self.uri              = self.path;    
     self.contentType      = self.headers.get('content-type')
     self.sessionId        = self.headers.get("x-apple-session-id")
@@ -188,9 +201,10 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
       
     if handled:
       log(xbmc.LOGDEBUG, "got request " + str(self.uri) + "(par: " + self.uriParams + ") with method: " + str(method))     
+      if not audiooutput_playback_running():
+        g_lastComTime = time.time()    
     else:
       log(xbmc.LOGERROR, "unhandled request " + str(self.uri)  + "(par: " + self.uriParams + ")\n")
-
   
   def handleReverse(self):
     global g_reverseFiles
@@ -223,7 +237,6 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
     self.sendGeneralResponse(AIRPLAY_STATUS_OK)
 
   def handlePlay(self):
-    global g_isPlaying
     global g_lastEvent
     location = ""
     position = 0.0
@@ -238,7 +251,6 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
       if 'Content-Location' in plist:
         location = plist['Content-Location']
     else:
-      g_isPlaying  = True
       # Get URL to play
       startIdx = self.body.find("Content-Location: ")
       if startIdx == -1:
@@ -265,7 +277,6 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
         xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location, listitem)
       else:
         xbmc.Player(xbmc.PLAYER_CORE_DVDPLAYER).play(location)
-      g_isPlaying  = True         
       self.sendReverseEvent(EVENT_PLAYING)
     else:
       log(xbmc.LOGERROR, "no location found in play header")
@@ -277,9 +288,6 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
         position = getCurrentTimeSecs()
         respBody = "duration: %d\r\nposition: %f" % (getCurrentDurationSecs(), float(position))
 
-        if xbmc.getCondVisibility("Player.Paused"):
-          xbmc.executebuiltin('Action(pause)')
-          self.sendReverseEvent(EVENT_PLAYING)
         self.sendResponseWithBody(AIRPLAY_STATUS_OK, 'text/html', respBody)
       else:
         self.sendGeneralResponse(AIRPLAY_STATUS_METHOD_NOT_ALLOWED)
@@ -305,7 +313,6 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
 
     if g_isPlaying: #only stop player if we started him
       xbmc.executebuiltin('PlayerControl(Stop)')
-      g_isPlaying = False
       g_isPlaybackReallyStarted = False
     else: #if we are not playing and get the stop request - we just wanna stop picture streaming
       xbmc.executebuiltin('Action(previousmenu)')
@@ -349,6 +356,10 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
     playing = False
     
     if hasVideo:
+      if not g_isPlaybackReallyStarted:
+        #kill busydialog which might be opened by airtunes
+        #because of ios5 client
+        xbmc.executebuiltin("Dialog.Close(busydialog)")
       g_isPlaybackReallyStarted = True
       duration = getCurrentDurationSecs()
       if duration > 0:
@@ -374,7 +385,7 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
     else:#no video playing
       respBody = airplaystr.PLAYBACK_INFO_NOT_READY
       self.sendResponseWithBody(AIRPLAY_STATUS_OK, 'text/x-apple-plist+xml', respBody)      
-      if g_isPlaybackReallyStarted:
+      if g_isPlaybackReallyStarted and not airplay_isPlaying():
         self.sendReverseEvent(EVENT_STOPPED)
         g_isPlaybackReallyStarted = False
 
@@ -424,6 +435,12 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
 
   def sendReverseEvent(self, state):
     global g_lastEvent
+    global g_isPlaying
+    
+    if state == EVENT_STOPPED:
+      g_isPlaying = False
+    else:
+      g_isPlaying = True
     
     if self.sessionId != None and len(self.sessionId) > 0:
       if self.sessionId in g_reverseFiles and g_reverseFiles[self.sessionId] != None:
@@ -489,6 +506,7 @@ def airplay_initGlobals():
   global g_lastEvent
   global g_isPlaybackReallyStarted
   global g_macAdr
+  global g_lastComTime
 
   g_usePassword = False
   g_password = ""
@@ -498,6 +516,7 @@ def airplay_initGlobals():
   g_lastEvent = EVENT_NONE
   g_isPlaybackReallyStarted = False
   g_macAdr = ''
+  g_lastComTime = time.time()
 
 def airplay_setCredentials(usePassword, password):
   global g_usePassword
@@ -535,7 +554,13 @@ def airplay_stopServer():
 def airplay_isPlaying():
   global g_isPlaying
   return g_isPlaying
-  
+
+def airplay_blockAirtunes():
+  if (time.time() - g_lastComTime) > AIRPLAY_AIRTUNES_BLOCK_DELAY:
+    return False
+  else:
+    return True
+
 def airplay_announceZeroconf(zeroconf, mac, friendlyName):
   global g_macAdr
   g_macAdr = mac
@@ -547,6 +572,3 @@ def airplay_announceZeroconf(zeroconf, mac, friendlyName):
 
 def airplay_revokeZeroconf(zeroconf):
   zeroconf.removeService(airplaystr.AIRPLAY_ZEROCONF_HANDLE)
-
-
-

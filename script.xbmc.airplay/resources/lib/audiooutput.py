@@ -29,12 +29,14 @@ __icon__       = sys.modules[ "__main__" ].__icon__
 sys.path.append (__cwd__)
 
 from ctypes import *
-from airplay import *
+import airplay  #import airplay_blockAirtunes
 AO_PIPE_NAME = 'pipe://airtunes_ao/stream'
 BXA_PACKET_TYPE_FMT  = 1
 
 global g_pipesManager
 global g_options
+global g_playbackStarted
+g_playbackStarted = False
 g_pipesManager = xbmc.PipesManager()
 g_options = dict()
 
@@ -140,6 +142,7 @@ def audiooutput_initialize():
   pass
  
 def audiooutput_play(device, output_samples, num_bytes):
+  global g_playbackStarted
   if not g_pipesManager.exists(AO_PIPE_NAME):
     return 0
 #  NUM_OF_BYTES = 64
@@ -152,8 +155,24 @@ def audiooutput_play(device, output_samples, num_bytes):
 #      chunkSize = num_bytes - sentBytes
 #    memcpy(buf, (char*) output_samples + sentBytes, chunkSize);
 #  log(xbmc.LOGDEBUG,"num_bytes: " + str(num_bytes))
+  
+  if airplay.airplay_blockAirtunes():
+    log(xbmc.LOGDEBUG,"Suppressing AirTunes - iOS 5 client only checks drm for video airplay...")
+    return 1
+  
   if not g_pipesManager.write(AO_PIPE_NAME, string_at(output_samples,num_bytes)):
-    return 0;
+    return 0
+
+  #on first packet - start playback and show viz
+  if not g_playbackStarted:
+    g_playbackStarted = True
+    log(xbmc.LOGDEBUG,"Starting playback")
+    xbmc.executebuiltin("Dialog.Close(busydialog)")
+    listitem = xbmcgui.ListItem()
+    listitem.setInfo('music', {'title' : 'Streaming'})
+    listitem.setProperty('mimetype', 'audio/x-xbmc-pcm')
+    xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).play(AO_PIPE_NAME, listitem)      
+    xbmc.executebuiltin("ActivateWindow(WINDOWVISUALISATION)")    
 
 #    sentBytes += n;
   return 1;
@@ -165,6 +184,7 @@ def fourcc(name):
   return String(name, 4)
 
 def audiooutput_open_live(driver_id, format, option):
+  global g_playbackStarted
   if not g_pipesManager.openPipeForWrite(AO_PIPE_NAME):
     log(xbmc.LOGERROR,"error on pipe open")
     return None
@@ -174,10 +194,14 @@ def audiooutput_open_live(driver_id, format, option):
   
   buff = struct.pack('ccccIIIIQ','B','X','A',' ',BXA_PACKET_TYPE_FMT,sampleFormat.channels,sampleFormat.rate,sampleFormat.bits,0)
   if not g_pipesManager.write(AO_PIPE_NAME, buff):
-    log(xbmc.LOGERROR, "error wryting BXA header to pipe")
+    log(xbmc.LOGERROR, "error writing BXA header to pipe")
     return None
 
   xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).stop()
+  log(xbmc.LOGDEBUG,"initialised")
+  g_playbackStarted = False;
+  xbmc.executebuiltin("ActivateWindow(busydialog)")
+
 #todo fixme
 #  CFileItem item;
 
@@ -189,31 +213,31 @@ def audiooutput_open_live(driver_id, format, option):
 
 #  if audiooutput_get_option(option, "name"):
 #    item.GetMusicInfoTag()->SetTitle(ao_get_option(option, "name"));
-  listitem = xbmcgui.ListItem()
-  listitem.setInfo('music', {'title' : 'Streaming'})
-  listitem.setProperty('mimetype', 'audio/x-xbmc-pcm')
-  xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).play(AO_PIPE_NAME, listitem)
-  xbmc.executebuiltin("ActivateWindow(WINDOWVISUALISATION)")
+
   # return 1 here null pointer would lead to abort in libshairport (this is a pointe with adr 0x1 - it wont
   # be accessed inlibshairport but only passed around without a sense (refactor of libshairport will get rid)
   # of it
   return 1
 
 def audiooutput_close(device):
+  global g_playbackStarted
   #fix airplay video for ios5 devices
   #on ios5 when airplaying video
   #the client first opens an airtunes stream
   #while the movie is loading
   #in that case we don't want to stop the player here
   #because this would stop the airplaying video
-  if xbmc.Player(xbmc.PLAYER_CORE_PAPLAYER).isPlaying():
+  if not airplay.airplay_blockAirtunes():
     xbmc.executebuiltin('PlayerControl(Stop)')
     log(xbmc.LOGDEBUG, "AirPlay not running - stopping player");
+    xbmc.executebuiltin("Dialog.Close(busydialog)")  
   else:
     log(xbmc.LOGDEBUG, "AirPlay video running - player isn't stopped");
   g_pipesManager.setEof(AO_PIPE_NAME)
+
   g_pipesManager.flush(AO_PIPE_NAME)
   g_pipesManager.closePipe(AO_PIPE_NAME)
+  g_playbackStarted = False
 
   return 0
 
@@ -229,4 +253,7 @@ def audiooutput_get_option(options, key):
   if key in g_options:
     return g_options[key]
   return None
-
+  
+def audiooutput_playback_running():
+  global g_playbackStarted
+  return g_playbackStarted
