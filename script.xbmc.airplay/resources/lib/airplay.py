@@ -23,6 +23,7 @@ import BaseHTTPServerMod
 import shutil
 import xbmc
 import xbmcgui
+import urllib
 from SocketServer import ThreadingMixIn
 
 __scriptname__ = sys.modules[ "__main__" ].__scriptname__
@@ -268,7 +269,10 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
         position = float(self.body[startIdx : endIdx])
 
     if len(location):
-      location = location + "|User-Agent=AppleCoreMedia/1.0.0.8F455 (AppleTV; U; CPU OS 4_3 like Mac OS X; de_de)"
+      #url encode useragent
+      dict = { 'User-Agent' : 'AppleCoreMedia/1.0.0.8F455 (AppleTV; U; CPU OS 4_3 like Mac OS X; de_de)'}
+      userAgent = urllib.urlencode(dict)
+      location = location + "|" + userAgent
       log(xbmc.LOGDEBUG, "position: " + str(position))
       if position > 0.0:
         posPercent = position * 100
