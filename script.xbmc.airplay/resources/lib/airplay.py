@@ -416,7 +416,7 @@ class AirPlayHandler(BaseHTTPServerMod.BaseHTTPRequestHandler):
       try:
         volume = float(self.uriParams[foundIdx + len("volume=") : len(self.uriParams)])
         volume = volume * 100
-        xbmc.executebuiltin("SetVolume(%d)" % volume)
+        xbmc.executebuiltin("SetVolume(%d,showvolumebar)" % volume)
       except:
         log(xbmc.LOGERROR,"Error parsing volume")
       finally:
